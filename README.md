@@ -10,3 +10,5 @@ QRISK2 single index date and time-updating scores updated for CPRD GOLD, and QRI
 •	The bundle can calculate a one off score on the index date of your choice (single point QRISK), or can update each time one of its components is updated (time updating QRISK).
 
 •	The aim was to try and replicate QRISK2 scores recorded in the data as closely as possible rather than to use best practice definitions of each score component.
+
+•	See "QRISK bundle documentation_v2.0_08_04_20.docx" for complete explanation of files
