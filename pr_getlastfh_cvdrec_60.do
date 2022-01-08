@@ -15,12 +15,15 @@ save `tempura' , replace
 restore
 merge 1:m patid using `tempura', keep(match master)
 
-gen before=1 if   fh_date>`index' & _merge==3
+gen before=1 if fh_date>`index' & _merge==3 & fh_date!=.
 sort patid before fh_date 
 by patid: keep if _n==_N
+replace fh_date=. if fh_date>`index'
+replace fh_date=. if fh_date<`index' -365.25*`runin'
+
 drop _merge before
 
-gen fh_cvd=1 if fh_date!=.
+gen fh_cvd=1 if fh_date<=`index'
 replace fh_cvd=0 if fh_cvd==. | fh_date<`index'-365.25*`runin'
 
 end

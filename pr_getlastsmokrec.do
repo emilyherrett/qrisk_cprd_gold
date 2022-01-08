@@ -83,8 +83,8 @@ by patid: replace eventdate=. if _merge==3 & eventdate>`index' & _n==1
 by patid: replace status=. if _merge==3 & eventdate>`index' & _n==1
 drop if eventdate>`index' & _merge==3 & eventdate!=.
 
-by patid: replace eventdate=. if _merge==3 & eventdate<`index'-365.25*`runin' & _n==_N
 by patid: replace status=. if _merge==3 & eventdate<`index'-365.25*`runin' & _n==_N
+by patid: replace eventdate=. if _merge==3 & eventdate<`index'-365.25*`runin' & _n==_N
 drop if eventdate<`index'-365.25*`runin' & _merge==3
 gsort patid eventdate -status
 by patid: keep if _n==_N

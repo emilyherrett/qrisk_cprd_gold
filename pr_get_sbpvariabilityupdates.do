@@ -1,16 +1,8 @@
 cap prog drop pr_get_sbpvariabilityupdates
 
 program define pr_get_sbpvariabilityupdates 
-syntax , clinicalfile(string) additionalfile(string) begin(string) end(string) runin(integer) [limitlow(string) limithigh(string)]
+syntax , clinicalfile(string) additionalfile(string) begin(string) end(string) runin(integer) 
 
-****all valid sbp records in original data file
-if "`limitlow'"=="" {
-	local limitlow "0"
-}
-
-if "`limithigh'"=="" {
-	local limithigh "."
-}
 preserve
 
 use "$QRiskCodelistdir\cr_codelist_qof_cod.dta", clear
@@ -25,11 +17,7 @@ replace sbp=data2 if data2!=.
 
 drop if eventdate == .
 drop if sbp==.
-drop if sbp==1
-drop if sbp >`limithigh'
-drop if sbp <`limitlow'
-
-keep patid eventdate sbp
+drop if sbp<=1
 
 *keep lowest sbp if more than one measurement on same day
 keep patid eventdate sbp
@@ -40,8 +28,7 @@ save `sbprecs' , replace
 
 ***restrict to events during study period in patient file and order events after index date
 restore
-merge 1:m patid using `sbprecs' ,  keep(match master)
-drop _merge
+merge 1:m patid using `sbprecs' ,  keep(match master) nogen
 sort patid eventdate
 
 **add rows five years after each sbp record
@@ -57,7 +44,6 @@ foreach var in sbp eventdate {
 	replace `var' = . if runout == 1
 	}
 drop runoutdate order
-
 
 
 **keep all records 5 years prior to index and before end date
@@ -110,9 +96,28 @@ bysort patid (sbp_sddate): gen dup = 1 if sbp_sd == sbp_sd[_n-1] & patid == pati
 summ sbp_sd if dup == 1, d
 drop if dup == 1
 drop dup
+save `sbpsdrecs', replace
+
+**sbp_sd at index date 
+use `sbprecs', clear
+gen _diff = `begin' - eventdate
+gen _sbp5yr = 1 if _diff < (365.25*5) & _diff >= 0
+by patid: egen _countsbp5yr = count(_sbp5yr)
+
+*calculate standard deviation where there are two or more recorded values
+by patid: egen sbp_sd = sd(sbp) if _sbp5yr == 1 & _countsbp5yr >= 2
+drop sbp eventdate runout order maxrec _diff _sbp5yr _countsbp5yr
+keep if sbp_sd !=.
+duplicates drop
+gsort patid -sbp_sddate
+duplicates drop patid, force
+isid patid
+
+append using "`sbpsdrecs'"
 
 **sbp_sd = 0 at index date if no record prior to this date
 assert sbp_sddate != .
+sort patid sbp_sddate
 expand 2 if sbp_sddate>`begin' & patid[_n]!=patid[_n-1] & sbp_sddate !=0
 
 sort patid sbp_sddate

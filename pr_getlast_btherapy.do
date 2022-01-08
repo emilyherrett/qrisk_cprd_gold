@@ -28,6 +28,8 @@ restore
 merge 1:m patid using `ther_data', keep(match master)
 sort patid eventdate
 
+replace issuedate=. if _merge==3 & issuedate<`index'-365.25*`runin' 
+
 gen _everbeforeindex = 1 if eventdate <= `index'
 by patid: egen _counteverbeforeindex = count(_everbeforeindex)
 

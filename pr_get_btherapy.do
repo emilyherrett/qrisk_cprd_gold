@@ -22,14 +22,55 @@ duplicates drop
 
 gen b_`variable'=1
 
+tempfile treated
+save `treated' , replace
+
+/*merge with patient file, keep events within follow-up period*/
+use `dataathand', clear
+
+merge 1:m patid using `treated', keep(match master)
+
+drop if _merge==3 & eventdate>`end'
+drop if _merge==3 & eventdate<`begin'-365.25*`runin'
+
+sort patid eventdate
+
 if "`time'" == "ever" {
 	/*first eventdate for ever prescriptions*/
-	sort patid eventdate
 	by patid: keep if _n==1
+	
+	/*create additional records for patients first prescribed treatment
+	after the index date, set eventdate to start of follow-up and variable to 0*/ 
+	sort patid eventdate
+	expand 2 if eventdate>`begin' & eventdate!=. & patid[_n]!=patid[_n-1]
+	sort patid eventdate
+	by patid: replace b_`variable'=0 if _n==1 & eventdate>`begin'
+	by patid: replace eventdate = `begin' if _n==1 & eventdate>`begin'
 	}
 
 if "`time'" == "current" {
-	/*all prescription records for current prescriptions*/
+	/*only keep one pre-baseline record, marked as whether or not 
+	meets criteria of current treatment (at least 2 prior prescriptions 
+	with most recent no more than 28 days)*/
+	gen _28daywindow=1 if eventdate<=`begin' & (`begin'-eventdate) <=28
+	by patid: egen _count28daywindow = count(_28daywindow)
+	gen _everbeforeindex=1 if eventdate<=`begin'
+	by patid: egen _counteverbeforeindex=count(_everbeforeindex)
+	replace b_`variable'=0 if (_counteverbeforeindex<2 | _count28daywindow<1) & eventdate<=`begin'
+	gen before=1 if eventdate<`begin'
+	sort patid before
+	by patid before: drop if _n!=_N & before==1
+	drop _28daywindow _count28daywindow _everbeforeindex _counteverbeforeindex
+	preserve
+	keep if before==1
+	drop before
+	tempfile treatbefore
+	save `treatbefore' , replace
+	restore
+	
+	/*all prescription records for current prescriptions after baseline*/
+	drop if before==1
+	drop before
 	gen runoutdate=eventdate+28
 	format runoutdate %td
 	sort patid eventdate
@@ -42,42 +83,24 @@ if "`time'" == "current" {
 	by order: replace eventdate=runoutdate if _n==2
 	by order: replace b_`variable'=0 if _n==2
 	drop runoutdate order
-	}
-
-tempfile treated
-save `treated' , replace
 	
-/*merge with patient file, keep events within follow-up period*/
-use `dataathand', clear
-
-merge 1:m patid using `treated', keep(match master)
-
-drop if _merge==3 & eventdate>`end'
-drop if _merge==3 & eventdate<`begin'-365.25*`runin'
-duplicates drop patid if eventdate<`begin' & _merge==3 , force
-
-replace b_`variable'=0 if b_`variable'==.
-
-/*create additional records for patients first prescribed hypertension treatment
- after the index rate, set eventdate to start of follow-up and b_hyp_diag to 0*/ 
-
-sort patid eventdate
-expand 2 if eventdate>`begin' & eventdate!=. & patid[_n]!=patid[_n-1]
-sort patid eventdate
-by patid: replace b_`variable'=0 if _n==1 & eventdate>`begin'
-by patid: replace eventdate = `begin' if _n==1 & eventdate>`begin'
+	/*add in records for patients first prescribed treatment before index date*/
+	append using "`treatbefore'"
+	
+	/*create additional records for patients first prescribed hypertension treatment
+	after the index rate, set eventdate to start of follow-up and b_hyp_diag to 0*/ 
+	sort patid eventdate
+	expand 2 if eventdate>`begin' & eventdate!=. & patid[_n]!=patid[_n-1]
+	sort patid eventdate
+	by patid: replace b_`variable'=0 if _n==1 & eventdate>`begin'
+	by patid: replace eventdate = `begin' if _n==1 & eventdate>`begin'
+	}
 
 drop _merge
 rename eventdate `variable'date
 
 replace b_`variable'=0 if b_`variable'==.
 sort patid `variabledate'
-
-if "`wide'"=="wide" {
-by patid: gen b_clin_num=_n
-
-reshape wide b_`variable' `variable'date, i(patid) j(b_clin_num)
-}
 
 end
 

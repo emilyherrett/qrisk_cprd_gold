@@ -1,7 +1,7 @@
 cap prog drop pr_get_treatedhyp
 
 prog define pr_get_treatedhyp 
-syntax , therapyfile(string) clinicalfile(string) referralfile(string) begin(string) end(string) runin(string) commondosage(string) [wide]
+syntax , therapyfile(string) clinicalfile(string) referralfile(string) begin(string) end(string) runin(string) commondosage(string)
 
 tempfile dataathand
 save `dataathand' , replace
@@ -79,30 +79,27 @@ keep patid eventdate daily_dose numdays qty
 
 replace numdays=qty/daily_dose if numdays==0 & qty!=. & daily_dose!=. & qty!=0 & daily_dose!=0
 replace numdays=qty if numdays==0 & (daily_dose==0 | daily_dose==.) & qty!=0 & qty!=.
-replace numdays=28 if numdays==0
+replace numdays=28 if numdays<=1
 
 drop daily_dose qty
 
-sort patid eventdate
+sort patid eventdate -numdays
+duplicates drop patid eventdate, force // only keep the prescription with the longest duration for a given date or runoutdate will not be created
 
 gen runoutdate=eventdate+numdays
 
 gen b_treatedhyp=1 
+duplicates drop
 
 /*create an additional record for time between prescriptions where eventdate is 
 the runout date of the previous record and b_treated hyp is 0
 */
 gen order = _n
-
 expand 2 if runoutdate<eventdate[_n+1] & patid==patid[_n+1]
-
 sort order
-
 by order: replace eventdate=runoutdate if _n==2
-
 by order: replace b_treatedhyp=0 if _n==2
-
-drop runoutdate numdays order
+drop numdays order
 tempfile treatedhyp
 save `treatedhyp' , replace
 
@@ -119,15 +116,16 @@ replace b_treatedhyp=0 if b_treatedhyp==.
 
 /*create additional records for patients first prescribed hypertension treatment
  after the index rate, set eventdate to start of follow-up and b_hyp_diag to 0*/ 
- 
 sort patid eventdate
 expand 2 if eventdate>`begin' & eventdate!=. & patid[_n]!=patid[_n-1]
 sort patid eventdate
 by patid: replace b_treatedhyp=0 if _n==1 & eventdate>`begin'
 by patid: replace eventdate = `begin' if _n==1 & eventdate>`begin'
 
+/*for patients with only one record which is pre-baseline and is =1 but runout is before index, replace =0*/ 
+by patid: replace b_treatedhyp=0 if _N==1 & issuedate!=. & issuedate!=indexdate & b_treatedhyp==1 & runoutdate<indexdate
 
-drop _merge
+drop _merge runoutdate
 rename eventdate treatedhypdate
 
 /*APPEND HYPERTENSION DIAGNOSIS AND TREATMENT DATA*/
@@ -149,14 +147,15 @@ replace b_bp_treatment=0 if b_bp_treatment==.
 replace b_hyp_diag=0 if b_hyp_diag==.
 duplicates drop
 
-if "`wide'"=="wide" {
-by patid: gen smok_rec_num=_n
-
-reshape wide b_treatedhyp treatedhypdate, i(patid) j(smok_rec_num)
-}
-
-sort patid treatedhypdate
+gsort patid treatedhypdate -b_treatedhyp
+duplicates drop patid treatedhypdate, force // to remove conflicting results for the same date
 by patid: drop if b_treatedhyp[_n-1]==b_treatedhyp & b_bp_treatment[_n-1]==b_bp_treatment & b_hyp_diag[_n-1]==b_hyp_diag & _n>1
+by patid: drop if b_treatedhyp[_n+1]==b_treatedhyp & b_bp_treatment[_n+1]==b_bp_treatment & b_hyp_diag[_n+1]==b_hyp_diag & treatedhypdate<=`begin'
+
+*Only kept the most recent baseline measure
+gsort patid -b_treatedhyp treatedhypdate
+duplicates drop patid if treatedhypdate<=`begin', force
+sort patid treatedhypdate
 
 end
 

@@ -282,17 +282,16 @@ drop `datevarlist'
 sort patid score_update
 
 *adds variable values in gaps between updates
-local binvarlist "b_atrialfib fh_cvd b_type1 b_type2 bmi b_ra b_renal_`qriskscore' b_treatedhyp sbp"
+local binvarlist "b_atrialfib fh_cvd b_type1 b_type2 bmi b_ra b_renal_`qriskscore' b_treatedhyp"
 if "`qriskscore'" == "qrisk3" {
 	local binvarlist "`binvarlist' b_antipsychotics b_corticosteroids b_ED b_migraine b_sle b_smi b_hiv b_ED"
 	}
 
-local valuevarlist "smokstatus TC_HDLratio sbp"
-/*
+local valuevarlist "smokstatus TC_HDLratio bmi sbp"
 if "`qriskscore'" == "`qrisk3'" {
 	local valuevarlist "`valuevarlist' sbp_sd"
 	}
-*/
+
 
 local allvarlist "`binvarlist' `valuevarlist'"
 	

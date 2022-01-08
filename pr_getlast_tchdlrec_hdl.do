@@ -46,8 +46,8 @@ by patid: replace TC_HDLdate=. if _merge==3 & TC_HDLdate>`index' & _n==1
 by patid: replace TC_HDLratio=. if _merge==3 & TC_HDLdate>`index' & _n==1
 drop if TC_HDLdate>`index' & _merge==3 & TC_HDLdate!=.
 
-by patid: replace TC_HDLdate=. if TC_HDLdate<`index'-365.25*`runin' &  _merge==3 & _n==_N
 by patid: replace TC_HDLratio=. if TC_HDLdate<`index'-365.25*`runin' &  _merge==3 & _n==_N
+by patid: replace TC_HDLdate=. if TC_HDLdate<`index'-365.25*`runin' &  _merge==3 & _n==_N
 by patid: drop if TC_HDLdate<`index'-365.25*`runin' &  _merge==3 
 sort patid TC_HDLdate TC_HDLratio
 by patid: keep if _n==_N

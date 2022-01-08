@@ -56,8 +56,6 @@ gsort patid -bmidate
 duplicates drop patid if bmidate<=`begin', force
 
 sort patid bmidate
-by patid: drop if bmi[_n-1]==bmi & _n>1
-
 expand 2 if bmidate>`begin' & bmidate!=. & patid[_n]!=patid[_n-1]
 sort patid bmidate
 by patid: replace bmi=. if _n==1 & bmidate>`begin'
@@ -66,11 +64,6 @@ by patid: replace bmidate=`begin' if _n==1 & bmidate>`begin'
 
 
 drop _merge
-if "`wide'"=="wide" {
-by patid: gen bmi_rec_num=_n
-
-reshape wide bmi bmidate, i(patid) j(bmi_rec_num)
-}
 
 end
 

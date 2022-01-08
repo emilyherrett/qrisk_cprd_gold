@@ -46,8 +46,8 @@ by patid: replace eventdate=. if _merge==3 & eventdate>`index' & _n==1
 by patid: replace b_`variable'=. if _merge==3 & eventdate>`index' & _n==1
 drop if _merge==3 & eventdate>`index' & eventdate!=.
 
-by patid: replace eventdate=. if _merge==3 & eventdate<`index'-365.25*`runin' & _n==_N
 by patid: replace b_`variable'=. if _merge==3 & eventdate<`index'-365.25*`runin' & _n==_N
+by patid: replace eventdate=. if _merge==3 & eventdate<`index'-365.25*`runin' & _n==_N
 drop if _merge==3 & eventdate<`index'-365.25*`runin'
 gsort patid -eventdate
 count if  _merge==3 

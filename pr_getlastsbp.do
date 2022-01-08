@@ -55,8 +55,8 @@ by patid: replace sbp=. if _merge==3 & eventdate>`index' & _n==1
 drop if eventdate>`index' & _merge==3 & eventdate!=.
 
 *if last sbp is before the run in period, sets sbp and eventdate to missing for this record
-by patid: replace eventdate=. if _merge==3 & eventdate<`index'-365.25*`runin' & _n==_N
 by patid: replace sbp=. if _merge==3 & eventdate<`index'-365.25*`runin' & _n==_N
+by patid: replace eventdate=. if _merge==3 & eventdate<`index'-365.25*`runin' & _n==_N
 
 *drop remaining eventdates that are before the run in period
 drop if _merge==3 & eventdate<`index'-365.25*`runin' 
