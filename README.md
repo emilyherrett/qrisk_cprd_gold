@@ -12,3 +12,10 @@ QRISK2 single index date and time-updating scores updated for CPRD GOLD, and QRI
 •	The aim was to try and replicate QRISK2 scores recorded in the data as closely as possible rather than to use best practice definitions of each score component.
 
 •	See "QRISK bundle documentation_v2.0_08_04_20.docx" for a complete explanation of files.
+
+
+**Note about cr_preparemodifiedqrisk_multipleimputation_FORGITHUB**
+The do file uses multiple imputation to create 5 complete case datasets for QRISK3 predictor variables following the process described in Hippisley-Cox et al’s QRISK3 paper (1). The imputation model includes all predictor variables, age interaction terms, the Nelson-Aalen estimator for the baseline cumulative hazard, and the outcome indicator. Continuous variables are modelled using linear regression; fractional polynomials match the published QRISK3 equation, all variables are centred using the cohort means, variables that are not normally distributed are log transformed and the just another variable approach(2) is used to include interactions with age from the QRISK3 model. Rubin’s rules are used to combine the results across the imputed datasets.
+ 
+1.          Hippisley-Cox J, Coupland C, Brindle P. Development and validation of QRISK3 risk prediction algorithms to estimate future risk of cardiovascular disease: prospective cohort study. BMJ. 2017 May 23;357:j2099.
+2.          White IR, Royston P, Wood AM. Multiple imputation using chained equations: Issues and guidance for practice. Stat Med. 2011 Feb 20;30(4):377–99.
